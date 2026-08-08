@@ -20,6 +20,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # STEP A: Pull down the state history from your previous runs
+      - name: Download Existing State History
+        uses: actions/download-artifact@v4
+        with:
+          name: tf-state-storage
+          path: .
+        continue-on-error: true # Safe if this is the first run
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -39,10 +47,21 @@ jobs:
       - name: Terraform Plan
         run: terraform plan
 
+      # Will run if you select 'apply'
       - name: Terraform Apply
         if: github.event.inputs.action == 'apply'
         run: terraform apply -auto-approve
 
+      # Will run if you select 'destroy'
       - name: Terraform Destroy
         if: github.event.inputs.action == 'destroy'
         run: terraform destroy -auto-approve
+
+      # STEP B: Save the new/updated state history back to GitHub
+      - name: Save Updated State File
+        if: always() # Runs even if creation or destruction fails
+        uses: actions/upload-artifact@v4
+        with:
+          name: tf-state-storage
+          path: terraform.tfstate
+          if-no-files-found: ignore
