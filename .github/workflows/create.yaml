@@ -1,12 +1,13 @@
+```yaml
 name: Terraform Apply or Destroy
 
 on:
   workflow_dispatch:
     inputs:
       action:
-        description: 'Select the Terraform action to run'
+        description: "Select Terraform action"
         required: true
-        default: 'apply'
+        default: apply
         type: choice
         options:
           - apply
@@ -15,76 +16,35 @@ on:
 jobs:
   terraform:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-
-    # 1. Download existing state if it exists from a previous run
-    - name: Download Existing State
-      uses: actions/download-artifact@v4
-      with:
-    -  name: terraform-state
-        path: 
-      continue-on-error: true # Safe if this is the very first run
-
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
-
-    # 2. Set up and initialize Terraform
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: 1.5.0
-
-    - name: Terraform Init
-      run: terraform init
-
-    # 3. Run Apply if selected
-    - name: Terraform Apply
-      if: ${{ github.event.inputs.action == 'apply' }}
-      run: terraform apply -auto-approve
-
-    # 4. Run Destroy if selected
-    - name: Terraform Destroy
-      if: ${{ github.event.inputs.action == 'destroy' }}
-      run: terraform destroy -auto-approve
-
-    # 5. Upload updated state file back to GitHub so it isn't lost
-    - name: Save Updated State File
-      if: always() # Runs even if the apply/destroy step fails
-      uses: actions/upload-artifact@v4
-      with:
-        name: terraform-state
-        path: terraform.tfstate
-        if-no-files-found: ignore
-name: ec2-creation
-on: [push] # triggers
-jobs:
-  terraform:
-    runs-on: ubuntu-latest # Linux OS. We can have windows or MAC
-    steps: # stages
-      - name: checkout the Code
-        uses: actions/checkout@v5
-
-      - name: setup terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: run init
-        run: terraform init
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1 # Replace with your desired AWS region
+          aws-region: us-east-1
 
-      - name: run plan
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
         run: terraform plan
 
-      - name: run apply
+      - name: Terraform Apply
+        if: github.event.inputs.action == 'apply'
         run: terraform apply -auto-approve
+
+      - name: Terraform Destroy
+        if: github.event.inputs.action == 'destroy'
+        run: terraform destroy -auto-approve
+```
