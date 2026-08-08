@@ -1,49 +1,27 @@
-name: Terraform Apply or Destroy
-
-on:
-  workflow_dispatch:
-    inputs:
-      action:
-        description: "Select Terraform action"
-        required: true
-        default: apply
-        type: choice
-        options:
-          - apply
-          - destroy
-
+name: ec2-creation
+on: [push] # triggers
 jobs:
   terraform:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Linux OS. We can have windows or MAC
+    steps: # stages
+      - name: checkout the Code
+        uses: actions/checkout@v5
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: setup terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: run init
+        run: terraform init
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: us-east-1 # Replace with your desired AWS region
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      # Terraform will automatically connect to S3 and find your active infrastructure here
-      - name: Terraform Init
-        run: terraform init
-
-      - name: Terraform Validate
-        run: terraform validate
-
-      - name: Terraform Plan
+      - name: run plan
         run: terraform plan
 
-      - name: Terraform Apply
-        if: github.event.inputs.action == 'apply'
+      - name: run apply
         run: terraform apply -auto-approve
-
-      - name: Terraform Destroy
-        if: github.event.inputs.action == 'destroy'
-        run: terraform destroy -auto-approve
