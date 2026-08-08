@@ -9,7 +9,7 @@ terraform {
     bucket = "bnsaws-remote-state"
     key    = "github-action"
     region = "us-east-1"
-    dynamodb_table = "bnsaws-locking"
+     use_lockfile = true
   }
 }
 
